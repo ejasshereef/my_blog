@@ -14,37 +14,36 @@ export const registerUser = async (req: Request, res: Response) => {
       phone?: number;
     };
 
-    console.log("inside register");
-    
-
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-      res.status(400);
-      throw new ApiError(400, "User already exists");
-    }
-    const salt = await bcrypt.genSalt(10);
-    const password = await bcrypt.hash(req.body.password, salt);
-    const user = await User.create({
-      name,
-      email,
-      phone,
-      password,
-    });
-
-    if (user) {
-      const token_user = jwt.sign({ id: user._id }, EnvKeys.JWT_SECRET_KEY, {
-        expiresIn: 60 * 60,
-      });
-
-      res.status(200).json({
-        token_user,
-        user,
-        message: "Signup Succesful",
+      res.status(400).json({
+        message: "user already registered",
       });
     } else {
-      res.status(400);
-      throw new ApiError(400, "Invalid user data");
+      const salt = await bcrypt.genSalt(10);
+      const password = await bcrypt.hash(req.body.password, salt);
+      const user = await User.create({
+        name,
+        email,
+        phone,
+        password,
+      });
+
+      if (user) {
+        const token_user = jwt.sign({ id: user._id }, EnvKeys.JWT_SECRET_KEY, {
+          expiresIn: 60 * 60,
+        });
+
+        res.status(200).json({
+          token_user,
+          user,
+          message: "Signup Succesful",
+        });
+      } else {
+        res.status(400);
+        throw new ApiError(400, "Invalid user data");
+      }
     }
   } catch (error) {
     console.error(error);
@@ -61,11 +60,14 @@ export const loginUser = async (req: Request, res: Response) => {
     const user: tsUser | null = await User.findOne({ email });
 
     if (!user) {
-      res.json({ message: "email not found" });
+      res.status(400).json({ message: "Email no found" });
     } else {
       const isValid = await bcrypt.compare(password, user.password);
 
       if (isValid) {
+        if (!EnvKeys?.JWT_SECRET_KEY) {
+          throw new ApiError(500, "Missing JWT secret key");
+        }
         const token_user = jwt.sign(
           { id: user?.user_id },
           EnvKeys?.JWT_SECRET_KEY,
@@ -74,13 +76,14 @@ export const loginUser = async (req: Request, res: Response) => {
           }
         );
 
-        res.status(201).json({ token_user, user, message: "Login success" });
+        res.status(200).json({ token_user, user, message: "Login success" });
       } else {
         res.status(400);
         throw new ApiError(400, "Invalid user data");
       }
     }
   } catch (error) {
-    throw new ApiError(500, "Unexpected error...!");
+    console.error("Error finding user:", error);
+    throw new ApiError(500, "Internal server error");
   }
 };
