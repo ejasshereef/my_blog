@@ -1,62 +1,71 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import isEmail from "validator/lib/isEmail";
+import axios from "../utils/AxiosInstance";
 
-interface tsFormData{
-    user_name:string;
-    password:string
+interface tsFormData {
+  email: string;
+  password: string;
 }
 
 const Login = () => {
+  const navigate = useNavigate();
+
+ 
   // setState
   const [formData, setFormData] = useState({
-    user_name: "",
+    email: "",
     password: "",
   } as tsFormData);
 
   const [formError, setFormError] = useState({
-    user_name: "",
+    email: "",
     password: "",
   } as tsFormData);
 
   // Password Visible
   const [isPasswordVisible, setIsPasswordvisible] = useState(false);
 
-  const [requestAdd, setRequestAdd] = useState({
+  const [request, setRequest] = useState({
     loading: false,
     error: "",
     success: "",
   });
 
-  // Validation Form
-  const validateLoginForm = async () => {
+  // Form Validation
+  const validate = async () => {
     try {
       let hasError = false;
       const tempError = {
-        user_name: "",
+        email: "",
         password: "",
-       
       };
 
-      tempError.user_name = "";
-      if (formData.user_name.length === 0) {
+      tempError.email = "";
+
+      if (formData?.email?.length === 0) {
         hasError = true;
-        tempError.user_name = "required";
+        tempError.email = "required";
       }
 
-      if (formData.user_name.length >= 60) {
+      if (isEmail(formData?.email)) {
+        // valid email Id //
+      } else {
         hasError = true;
-        tempError.user_name = "Only allow 60 characters.";
+        tempError.email = "Enter a Valid Email Id.";
+      }
+
+      if (formData?.email?.length >= 60) {
+        hasError = true;
+        tempError.email = "Only allow 60 characters.";
       }
 
       tempError.password = "";
-      if (formData.password.length === 0) {
+      if (formData?.password?.length === 0) {
         hasError = true;
         tempError.password = "required";
       }
 
-     
-
-     
       setFormError({
         ...formError,
         ...tempError,
@@ -72,12 +81,54 @@ const Login = () => {
     }
   };
 
+  const handleSubmition = async () => {
+    try {
+      setRequest({
+        loading: true,
+        error: "",
+        success: "",
+      });
+      const hasError = await validate();
+      if (hasError) {
+        setRequest({
+          loading: false,
+          error: "Enteries are not Valid...!",
+          success: "",
+        });
+        return;
+      }
+
+      const response = await axios.post("/login", formData);
+      if (response.status === 200) {
+        setRequest({
+          loading: false,
+          error: "",
+          success: "Login Success...!",
+        });
+        navigate("/home");
+      } else {
+        setRequest({
+          loading: false,
+          error: "Invalid Credentials...!",
+          success: "",
+        });
+      }
+    } catch (error) {
+      setRequest({
+        loading: false,
+        error: "Unexpected Error...!",
+        success: "",
+      });
+      console.error(error);
+    }
+  };
+
   return (
     <>
-      <div className="md:mx-8 bg-red-200 px-3 lg:mx-28  lg:px-0 md:p-0">
+      <div className="md:mx-8 px-3 lg:mx-28  lg:px-0 md:p-0">
         <div className="container mx-auto">
           <div className="w-full md:flex-row xs:flex-col">
-            <div className="md:mx-40 lg:mx-64 bg-orange-300 xl:mx-96">
+            <div className="md:mx-40 lg:mx-64  xl:mx-96 md:mt-36">
               <div className="rounded border">
                 <div className="bg-gray-100 p-3 border-b text-center">
                   Login
@@ -94,6 +145,14 @@ const Login = () => {
                         maxLength={60}
                         placeholder="Enter User Name or Email ID"
                         className="w-full border-2  p-2 rounded  outline-none  border-gray-100 focus:border-gray-200"
+                        onChange={(e) => {
+                          const temVal = e.target.value;
+                          if (temVal)
+                            setFormData({
+                              ...formData,
+                              email: temVal.trim(),
+                            });
+                        }}
                       />
                     </div>
                   </div>
@@ -124,7 +183,10 @@ const Login = () => {
                 {/* Submit Login button */}
                 <div className="p-3">
                   <div className="flex justify-center">
-                    <button className="bg-gray-200 hover:bg-gray-100 rounded text-sm px-10 py-2.5 text-center inline-flex text-black">
+                    <button
+                      className="bg-gray-200 hover:bg-gray-100 rounded text-sm px-10 py-2.5 text-center inline-flex text-black"
+                      onClick={handleSubmition}
+                    >
                       Login
                     </button>
                   </div>
