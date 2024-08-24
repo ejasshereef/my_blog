@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import isEmail from "validator/lib/isEmail";
 import axios from "../utils/AxiosInstance";
 
-
 interface tsFormData {
   email: string;
   password: string;
@@ -83,7 +82,6 @@ const Login = () => {
 
   const handleSubmition = async () => {
     try {
-     
       setRequest({
         loading: true,
         error: "",
@@ -99,15 +97,17 @@ const Login = () => {
         return;
       }
 
-      const response = await axios.post("/login", formData);
+      const response = await axios.post("/login", formData, {
+        withCredentials: true,
+      });
       if (response.status === 200) {
         setRequest({
           loading: false,
           error: "",
           success: "Login Success...!",
         });
-        alert(response?.data?.message)
-         navigate("/home");
+        alert(response?.data?.message);
+        navigate("/posts");
       } else {
         setRequest({
           loading: false,
@@ -127,7 +127,6 @@ const Login = () => {
 
   return (
     <>
-     
       <div className="md:mx-8 px-3 lg:mx-28  lg:px-0 md:p-0">
         <div className="container mx-auto">
           <div className="md:mx-40 lg:mx-64  xl:mx-[500px] md:mt-52">

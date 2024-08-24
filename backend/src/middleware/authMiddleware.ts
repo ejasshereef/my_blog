@@ -4,6 +4,7 @@ import User from "../models/userModel";
 import { NextFunction, Request, Response } from "express";
 import EnvKeys from "../utils/EnvKeys";
 import { tsUser } from "../utils/types";
+import { ApiError } from "../utils/ApiError";
 
 declare module "express" {
   interface Request {
@@ -24,15 +25,14 @@ const protect = async (req: Request, res: Response, next: NextFunction) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, EnvKeys?.JWT_SECRET_KEY) as {
-        user_id: string;
-        name: string;
+        id: string;
       };
 
-      const user = await User.findById(decoded.user_id).select("-password");
+      const user = await User.findById(decoded?.id).select("-password");
 
       if (!user) {
-        res.status(401);
-        throw new Error("Not authorized, user not found");
+        res.status(400);
+        throw new ApiError(400, "Not authorized, user not found");
       }
 
       req.user = user as tsUser;
@@ -40,12 +40,12 @@ const protect = async (req: Request, res: Response, next: NextFunction) => {
       next();
     } catch (error) {
       console.error(error);
-      res.status(401);
-      throw new Error("Not authorized, token failed");
+      res.status(400);
+      throw new ApiError(400, "Not authorized, token failed");
     }
   } else {
-    res.status(401);
-    throw new Error("Not authorized, no token");
+    res.status(400);
+    throw new ApiError(400, "Not authorized, no token");
   }
 };
 

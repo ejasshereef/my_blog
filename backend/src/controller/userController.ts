@@ -31,12 +31,17 @@ export const registerUser = async (req: Request, res: Response) => {
       });
 
       if (user) {
-        const token_user = jwt.sign({ id: user._id }, EnvKeys.JWT_SECRET_KEY, {
+        const token = jwt.sign({ id: user._id }, EnvKeys.JWT_SECRET_KEY, {
           expiresIn: 60 * 60,
         });
 
+        res.cookie("jwt", token, {
+          httpOnly: false,
+          sameSite: "strict",
+          maxAge: 3600000,
+        });
+
         res.status(200).json({
-          token_user,
           user,
           message: "Signup Succesful",
         });
@@ -68,21 +73,27 @@ export const loginUser = async (req: Request, res: Response) => {
         if (!EnvKeys?.JWT_SECRET_KEY) {
           throw new ApiError(500, "Missing JWT secret key");
         }
-        const token_user = jwt.sign(
-          { id: user?.user_id },
-          EnvKeys?.JWT_SECRET_KEY,
-          {
-            expiresIn: 60 * 60,
-          }
-        );
+        const token = jwt.sign({ id: user?._id }, EnvKeys?.JWT_SECRET_KEY, {
+          expiresIn: 60 * 60,
+        });
+        if (token) {
+          res.cookie("jwt", token, {
+            httpOnly: false,
+            sameSite: "strict",
+            maxAge: 3600000,
+          });
+        }
 
-        res.status(200).json({ token_user, user, message: "Login success" });
+        res.status(200).json({ user, message: "Login success" });
       } else {
         res.status(400);
         throw new ApiError(400, "Invalid user data");
       }
     }
   } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+    });
     console.error("Error finding user:", error);
     throw new ApiError(500, "Internal server error");
   }

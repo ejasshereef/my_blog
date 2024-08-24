@@ -133,7 +133,7 @@ const Register = () => {
           error: "",
           success: "Succesfully Registered...!",
         });
-        navigate("/home");
+        navigate("/posts");
       } else {
         setRequest({
           loading: false,
